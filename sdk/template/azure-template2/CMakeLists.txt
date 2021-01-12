@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 cmake_minimum_required (VERSION 3.13)
-project(azure-template LANGUAGES CXX)
+project(azure-template2 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -40,10 +40,10 @@ set(
     src/version.cpp
 )
 
-add_library(azure-template ${AZURE_TEMPLATE_HEADER} ${AZURE_TEMPLATE_SOURCE})
+add_library(azure-template2 ${AZURE_TEMPLATE_HEADER} ${AZURE_TEMPLATE_SOURCE})
 
 target_include_directories(
-  azure-template
+  azure-template2
     PUBLIC
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/inc>
       $<INSTALL_INTERFACE:include>
@@ -52,18 +52,18 @@ target_include_directories(
 )
 
 # Disable dependency on azure-core until azure-core has released to vcpkg
-# target_link_libraries(azure-template PUBLIC Azure::azure-core)
+# target_link_libraries(azure-template2 PUBLIC Azure::azure-core)
 
 # make sure that users can consume the project as a library.
-add_library(Azure::azure-template ALIAS azure-template)
+add_library(Azure::azure-template2 ALIAS azure-template2)
 
 # coverage. Has no effect if BUILD_CODE_COVERAGE is OFF
-create_code_coverage(template azure-template azure-template-test)
+create_code_coverage(template azure-template2 azure-template2-test)
 
 get_az_version("${CMAKE_CURRENT_SOURCE_DIR}/inc/azure/template/version.hpp")
-generate_documentation(azure-template ${AZ_LIBRARY_VERSION})
+generate_documentation(azure-template2 ${AZ_LIBRARY_VERSION})
 
-az_vcpkg_export(azure-template)
+az_vcpkg_export(azure-template2)
 
 if(BUILD_TESTING)
     # tests
