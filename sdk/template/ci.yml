@@ -37,3 +37,7 @@ stages:
       Artifacts:
         - Name: azure-template
           Path: azure-template
+          VcpkgPortName: azure-template-cpp
+        - Name: azure-template2
+          Path: azure-template2
+          VcpkgPortName: azure-template2-cpp
