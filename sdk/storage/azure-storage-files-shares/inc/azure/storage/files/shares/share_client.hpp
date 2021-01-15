@@ -78,7 +78,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
      * ShareClient
      * @return ShareDirectoryClient The root directory of the share.
      */
-    ShareDirectoryClient GetRootShareDirectoryClient() const;
+    ShareDirectoryClient GetRootDirectoryClient() const;
 
     /**
      * @brief Create a ShareDirectoryClient from current ShareClient
@@ -86,7 +86,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
      * @return ShareDirectoryClient A directory client that can be used to manage a share directory
      * resource.
      */
-    ShareDirectoryClient GetShareDirectoryClient(const std::string& directoryPath) const;
+    ShareDirectoryClient GetDirectoryClient(const std::string& directoryPath) const;
 
     /**
      * @brief Create a ShareFileClient from current ShareClient
@@ -94,7 +94,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
      * @return ShareFileClient A file client that can be used to manage a share file
      * resource.
      */
-    ShareFileClient GetShareFileClient(const std::string& filePath) const;
+    ShareFileClient GetFileClient(const std::string& filePath) const;
 
     /**
      * @brief Creates the file share.
@@ -106,12 +106,31 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
         const CreateShareOptions& options = CreateShareOptions()) const;
 
     /**
+     * @brief Creates the file share if it does not exist, nothing will happen if the file share
+     * already exists.
+     * @param options Optional parameters to create this file share.
+     * @return Azure::Core::Response<Models::CreateShareResult> containing the information including
+     * the version and modified time of a share if it is successfully created.
+     */
+    Azure::Core::Response<Models::CreateShareResult> CreateIfNotExists(
+        const CreateShareOptions& options = CreateShareOptions()) const;
+
+    /**
      * @brief Deletes the file share.
      * @param options Optional parameters to delete this file share.
      * @return Azure::Core::Response<Models::ShareDeleteResult> currently empty and reserved for
      * future usage.
      */
     Azure::Core::Response<Models::DeleteShareResult> Delete(
+        const DeleteShareOptions& options = DeleteShareOptions()) const;
+
+    /**
+     * @brief Deletes the file share if it exists.
+     * @param options Optional parameters to delete this file share.
+     * @return Azure::Core::Response<Models::ShareDeleteResult> currently empty and reserved for
+     * future usage.
+     */
+    Azure::Core::Response<Models::DeleteShareResult> DeleteIfExists(
         const DeleteShareOptions& options = DeleteShareOptions()) const;
 
     /**
@@ -208,13 +227,13 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     /**
      * @brief List files and directories under the directory.
      * @param options Optional parameters to list the files and directories under this directory.
-     * @return Azure::Core::Response<Models::ListFilesAndDirectoriesSegmentResult> containing the
+     * @return Azure::Core::Response<Models::ListFilesAndDirectoriesSinglePageResult> containing the
      * information of the operation, directory, share and the listed result.
      */
-    Azure::Core::Response<Models::ListFilesAndDirectoriesSegmentResult>
-    ListFilesAndDirectoriesSegment(
-        const ListFilesAndDirectoriesSegmentOptions& options
-        = ListFilesAndDirectoriesSegmentOptions()) const;
+    Azure::Core::Response<Models::ListFilesAndDirectoriesSinglePageResult>
+    ListFilesAndDirectoriesSinglePage(
+        const ListFilesAndDirectoriesSinglePageOptions& options
+        = ListFilesAndDirectoriesSinglePageOptions()) const;
 
   private:
     Azure::Core::Http::Url m_shareUri;

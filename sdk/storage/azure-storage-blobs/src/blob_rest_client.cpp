@@ -61,7 +61,7 @@ namespace Azure { namespace Storage { namespace Blobs { namespace Models {
   const CopyStatus CopyStatus::Pending("pending");
 
   const DeleteSnapshotsOption DeleteSnapshotsOption::IncludeSnapshots("include");
-  const DeleteSnapshotsOption DeleteSnapshotsOption::Only("only");
+  const DeleteSnapshotsOption DeleteSnapshotsOption::OnlySnapshots("only");
 
   const EncryptionAlgorithmType EncryptionAlgorithmType::Aes256("AES256");
 
@@ -70,7 +70,7 @@ namespace Azure { namespace Storage { namespace Blobs { namespace Models {
 
   const PublicAccessType PublicAccessType::BlobContainer("container");
   const PublicAccessType PublicAccessType::Blob("blob");
-  const PublicAccessType PublicAccessType::Private("Private");
+  const PublicAccessType PublicAccessType::Private("");
 
   const RehydratePriority RehydratePriority::High("High");
   const RehydratePriority RehydratePriority::Standard("Standard");

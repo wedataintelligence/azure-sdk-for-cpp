@@ -213,45 +213,45 @@ namespace Azure { namespace Storage { namespace Test {
 
     {
       Blobs::StartCopyBlobFromUriOptions options;
-      options.SourceConditions.LeaseId = CreateUniqueLeaseId();
+      options.SourceAccessConditions.LeaseId = CreateUniqueLeaseId();
       /*
       don't know why, the copy operation also succeeds even if the lease id doesn't match.
       EXPECT_THROW(
           destBlobClient.StartCopyFromUri(sourceBlobClient.GetUrl(), options), StorageException);
       */
-      options.SourceConditions.LeaseId = leaseId;
+      options.SourceAccessConditions.LeaseId = leaseId;
       EXPECT_NO_THROW(destBlobClient.StartCopyFromUri(sourceBlobClient.GetUrl(), options));
     }
     sourceBlobClient.BreakLease();
     {
       Blobs::StartCopyBlobFromUriOptions options;
-      options.SourceConditions.IfMatch = eTag;
+      options.SourceAccessConditions.IfMatch = eTag;
       EXPECT_NO_THROW(destBlobClient.StartCopyFromUri(sourceBlobClient.GetUrl(), options));
-      options.SourceConditions.IfMatch = DummyETag;
+      options.SourceAccessConditions.IfMatch = DummyETag;
       EXPECT_THROW(
           destBlobClient.StartCopyFromUri(sourceBlobClient.GetUrl(), options), StorageException);
     }
     {
       Blobs::StartCopyBlobFromUriOptions options;
-      options.SourceConditions.IfNoneMatch = DummyETag;
+      options.SourceAccessConditions.IfNoneMatch = DummyETag;
       EXPECT_NO_THROW(destBlobClient.StartCopyFromUri(sourceBlobClient.GetUrl(), options));
-      options.SourceConditions.IfNoneMatch = eTag;
+      options.SourceAccessConditions.IfNoneMatch = eTag;
       EXPECT_THROW(
           destBlobClient.StartCopyFromUri(sourceBlobClient.GetUrl(), options), StorageException);
     }
     {
       Blobs::StartCopyBlobFromUriOptions options;
-      options.SourceConditions.IfModifiedSince = timeBeforeStr;
+      options.SourceAccessConditions.IfModifiedSince = timeBeforeStr;
       EXPECT_NO_THROW(destBlobClient.StartCopyFromUri(sourceBlobClient.GetUrl(), options));
-      options.SourceConditions.IfModifiedSince = timeAfterStr;
+      options.SourceAccessConditions.IfModifiedSince = timeAfterStr;
       EXPECT_THROW(
           destBlobClient.StartCopyFromUri(sourceBlobClient.GetUrl(), options), StorageException);
     }
     {
       Blobs::StartCopyBlobFromUriOptions options;
-      options.SourceConditions.IfUnmodifiedSince = timeAfterStr;
+      options.SourceAccessConditions.IfUnmodifiedSince = timeAfterStr;
       EXPECT_NO_THROW(destBlobClient.StartCopyFromUri(sourceBlobClient.GetUrl(), options));
-      options.SourceConditions.IfUnmodifiedSince = timeBeforeStr;
+      options.SourceAccessConditions.IfUnmodifiedSince = timeBeforeStr;
       EXPECT_THROW(
           destBlobClient.StartCopyFromUri(sourceBlobClient.GetUrl(), options), StorageException);
     }
@@ -310,7 +310,7 @@ namespace Azure { namespace Storage { namespace Test {
           EXPECT_TRUE(blob.IsSealed.GetValue());
         }
       }
-    } while (!options.ContinuationToken.GetValue().empty());
+    } while (options.ContinuationToken.HasValue());
 
     auto blobClient2 = m_blobContainerClient->GetAppendBlobClient(RandomString());
 
@@ -340,14 +340,14 @@ namespace Azure { namespace Storage { namespace Test {
     EXPECT_THROW(blobClientWithoutAuth.CreateIfNotExists(), StorageException);
     {
       auto response = blobClient.CreateIfNotExists();
-      EXPECT_TRUE(response.HasValue());
+      EXPECT_TRUE(response->Created);
     }
     auto blobContent
         = Azure::Core::Http::MemoryBodyStream(m_blobContent.data(), m_blobContent.size());
     blobClient.AppendBlock(&blobContent);
     {
       auto response = blobClient.CreateIfNotExists();
-      EXPECT_FALSE(response.HasValue());
+      EXPECT_FALSE(response->Created);
     }
     auto downloadStream = std::move(blobClient.Download()->BodyStream);
     EXPECT_EQ(

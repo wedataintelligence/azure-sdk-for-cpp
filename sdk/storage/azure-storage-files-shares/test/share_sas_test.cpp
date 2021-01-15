@@ -5,13 +5,15 @@
 
 #include "share_client_test.hpp"
 
+#include <chrono>
+
 namespace Azure { namespace Storage { namespace Test {
 
   TEST_F(FileShareClientTest, FileSasTest)
   {
-    auto sasStartsOn = Azure::Core::DateTime::Now() - std::chrono::minutes(5);
-    auto sasExpiredOn = Azure::Core::DateTime::Now() - std::chrono::minutes(1);
-    auto sasExpiresOn = Azure::Core::DateTime::Now() + std::chrono::minutes(60);
+    auto sasStartsOn = std::chrono::system_clock::now() - std::chrono::minutes(5);
+    auto sasExpiredOn = std::chrono::system_clock::now() - std::chrono::minutes(1);
+    auto sasExpiresOn = std::chrono::system_clock::now() + std::chrono::minutes(60);
 
     std::string fileName = RandomString();
     Sas::ShareSasBuilder fileSasBuilder;
@@ -32,7 +34,7 @@ namespace Azure { namespace Storage { namespace Test {
     auto fileServiceClient0 = Files::Shares::ShareServiceClient::CreateFromConnectionString(
         StandardStorageConnectionString());
     auto shareClient0 = fileServiceClient0.GetShareClient(m_shareName);
-    auto fileClient0 = shareClient0.GetShareFileClient(fileName);
+    auto fileClient0 = shareClient0.GetFileClient(fileName);
 
     std::string shareUri = shareClient0.GetUri();
     std::string fileUri = fileClient0.GetUri();
@@ -70,7 +72,7 @@ namespace Azure { namespace Storage { namespace Test {
 
     auto verifyFileList = [&](const std::string& sas) {
       auto shareClient = Files::Shares::ShareClient(shareUri + sas);
-      EXPECT_NO_THROW(shareClient.ListFilesAndDirectoriesSegment());
+      EXPECT_NO_THROW(shareClient.ListFilesAndDirectoriesSinglePage());
     };
 
     for (auto permissions :

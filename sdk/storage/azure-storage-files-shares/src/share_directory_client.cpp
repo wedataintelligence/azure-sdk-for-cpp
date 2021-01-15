@@ -91,7 +91,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     m_pipeline = std::make_shared<Azure::Core::Http::HttpPipeline>(policies);
   }
 
-  ShareDirectoryClient ShareDirectoryClient::GetSubShareDirectoryClient(
+  ShareDirectoryClient ShareDirectoryClient::GetSubdirectoryClient(
       const std::string& subDirectoryName) const
   {
     auto builder = m_shareDirectoryUri;
@@ -99,7 +99,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     return ShareDirectoryClient(builder, m_pipeline);
   }
 
-  ShareFileClient ShareDirectoryClient::GetShareFileClient(const std::string& filePath) const
+  ShareFileClient ShareDirectoryClient::GetFileClient(const std::string& filePath) const
   {
     auto builder = m_shareDirectoryUri;
     builder.AppendPath(Storage::Details::UrlEncodePath(filePath));
@@ -123,8 +123,8 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     return newClient;
   }
 
-  Azure::Core::Response<Models::CreateDirectoryResult> ShareDirectoryClient::Create(
-      const CreateDirectoryOptions& options) const
+  Azure::Core::Response<Models::CreateShareDirectoryResult> ShareDirectoryClient::Create(
+      const CreateShareDirectoryOptions& options) const
   {
     auto protocolLayerOptions = Details::ShareRestClient::Directory::CreateOptions();
     protocolLayerOptions.Metadata = options.Metadata;
@@ -167,29 +167,91 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     {
       protocolLayerOptions.FilePermission = std::string(c_FileInheritPermission);
     }
-    return Details::ShareRestClient::Directory::Create(
+    auto result = Details::ShareRestClient::Directory::Create(
         m_shareDirectoryUri, *m_pipeline, options.Context, protocolLayerOptions);
+    Models::CreateShareDirectoryResult ret;
+    ret.Created = true;
+    ret.ETag = std::move(result->ETag);
+    ret.FileAttributes = result->FileAttributes;
+    ret.FileCreatedOn = std::move(result->FileCreatedOn);
+    ret.FileLastWrittenOn = std::move(result->FileLastWrittenOn);
+    ret.FilePermissionKey = std::move(result->FilePermissionKey);
+    ret.FileChangedOn = std::move(result->FileChangedOn);
+    ret.FileId = std::move(result->FileId);
+    ret.FileParentId = std::move(result->FileParentId);
+    ret.IsServerEncrypted = result->IsServerEncrypted;
+    ret.LastModified = std::move(result->LastModified);
+
+    return Azure::Core::Response<Models::CreateShareDirectoryResult>(
+        std::move(ret), result.ExtractRawResponse());
   }
 
-  Azure::Core::Response<Models::DeleteDirectoryResult> ShareDirectoryClient::Delete(
-      const DeleteDirectoryOptions& options) const
+  Azure::Core::Response<Models::CreateShareDirectoryResult> ShareDirectoryClient::CreateIfNotExists(
+      const CreateShareDirectoryOptions& options) const
+
+  {
+    try
+    {
+      return Create(options);
+    }
+    catch (StorageException& e)
+    {
+      if (e.ErrorCode == Details::ResourceAlreadyExists)
+      {
+        Models::CreateShareDirectoryResult ret;
+        ret.Created = false;
+        return Azure::Core::Response<Models::CreateShareDirectoryResult>(
+            std::move(ret), std::move(e.RawResponse));
+      }
+      throw;
+    }
+  }
+
+  Azure::Core::Response<Models::DeleteShareDirectoryResult> ShareDirectoryClient::Delete(
+      const DeleteShareDirectoryOptions& options) const
   {
     auto protocolLayerOptions = Details::ShareRestClient::Directory::DeleteOptions();
-    return Details::ShareRestClient::Directory::Delete(
+    auto result = Details::ShareRestClient::Directory::Delete(
         m_shareDirectoryUri, *m_pipeline, options.Context, protocolLayerOptions);
+    Models::DeleteShareDirectoryResult ret;
+    ret.Deleted = true;
+    return Azure::Core::Response<Models::DeleteShareDirectoryResult>(
+        std::move(ret), result.ExtractRawResponse());
   }
 
-  Azure::Core::Response<Models::GetDirectoryPropertiesResult> ShareDirectoryClient::GetProperties(
-      const GetDirectoryPropertiesOptions& options) const
+  Azure::Core::Response<Models::DeleteShareDirectoryResult> ShareDirectoryClient::DeleteIfExists(
+      const DeleteShareDirectoryOptions& options) const
+  {
+    try
+    {
+      return Delete(options);
+    }
+    catch (StorageException& e)
+    {
+      if (e.ErrorCode == Details::ShareNotFound || e.ErrorCode == Details::ParentNotFound
+          || e.ErrorCode == Details::ResourceNotFound)
+      {
+        Models::DeleteShareDirectoryResult ret;
+        ret.Deleted = false;
+        return Azure::Core::Response<Models::DeleteShareDirectoryResult>(
+            std::move(ret), std::move(e.RawResponse));
+      }
+      throw;
+    }
+  }
+
+  Azure::Core::Response<Models::GetShareDirectoryPropertiesResult>
+  ShareDirectoryClient::GetProperties(const GetShareDirectoryPropertiesOptions& options) const
   {
     auto protocolLayerOptions = Details::ShareRestClient::Directory::GetPropertiesOptions();
     return Details::ShareRestClient::Directory::GetProperties(
         m_shareDirectoryUri, *m_pipeline, options.Context, protocolLayerOptions);
   }
 
-  Azure::Core::Response<Models::SetDirectoryPropertiesResult> ShareDirectoryClient::SetProperties(
+  Azure::Core::Response<Models::SetShareDirectoryPropertiesResult>
+  ShareDirectoryClient::SetProperties(
       Models::FileShareSmbProperties smbProperties,
-      const SetDirectoryPropertiesOptions& options) const
+      const SetShareDirectoryPropertiesOptions& options) const
   {
     auto protocolLayerOptions = Details::ShareRestClient::Directory::SetPropertiesOptions();
     protocolLayerOptions.FileAttributes = Details::FileAttributesToString(smbProperties.Attributes);
@@ -228,9 +290,9 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
         m_shareDirectoryUri, *m_pipeline, options.Context, protocolLayerOptions);
   }
 
-  Azure::Core::Response<Models::SetDirectoryMetadataResult> ShareDirectoryClient::SetMetadata(
+  Azure::Core::Response<Models::SetShareDirectoryMetadataResult> ShareDirectoryClient::SetMetadata(
       Storage::Metadata metadata,
-      const SetDirectoryMetadataOptions& options) const
+      const SetShareDirectoryMetadataOptions& options) const
   {
     auto protocolLayerOptions = Details::ShareRestClient::Directory::SetMetadataOptions();
     protocolLayerOptions.Metadata = std::move(metadata);
@@ -238,66 +300,67 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
         m_shareDirectoryUri, *m_pipeline, options.Context, protocolLayerOptions);
   }
 
-  Azure::Core::Response<Models::ListFilesAndDirectoriesSegmentResult>
-  ShareDirectoryClient::ListFilesAndDirectoriesSegment(
-      const ListFilesAndDirectoriesSegmentOptions& options) const
+  Azure::Core::Response<Models::ListFilesAndDirectoriesSinglePageResult>
+  ShareDirectoryClient::ListFilesAndDirectoriesSinglePage(
+      const ListFilesAndDirectoriesSinglePageOptions& options) const
   {
     auto protocolLayerOptions
-        = Details::ShareRestClient::Directory::ListFilesAndDirectoriesSegmentOptions();
+        = Details::ShareRestClient::Directory::ListFilesAndDirectoriesSinglePageOptions();
     protocolLayerOptions.Prefix = options.Prefix;
     protocolLayerOptions.ContinuationToken = options.ContinuationToken;
-    protocolLayerOptions.MaxResults = options.MaxResults;
-    auto result = Details::ShareRestClient::Directory::ListFilesAndDirectoriesSegment(
+    protocolLayerOptions.MaxResults = options.PageSizeHint;
+    auto result = Details::ShareRestClient::Directory::ListFilesAndDirectoriesSinglePage(
         m_shareDirectoryUri, *m_pipeline, options.Context, protocolLayerOptions);
-    Models::ListFilesAndDirectoriesSegmentResult ret;
+    Models::ListFilesAndDirectoriesSinglePageResult ret;
     ret.ServiceEndpoint = std::move(result->ServiceEndpoint);
     ret.ShareName = std::move(result->ShareName);
     ret.ShareSnapshot = std::move(result->ShareSnapshot);
     ret.DirectoryPath = std::move(result->DirectoryPath);
     ret.Prefix = std::move(result->Prefix);
     ret.PreviousContinuationToken = std::move(result->PreviousContinuationToken);
-    ret.MaxResults = result->MaxResults;
+    ret.PageSizeHint = result->PageSizeHint;
     ret.ContinuationToken = std::move(result->ContinuationToken);
-    ret.DirectoryItems = std::move(result->Segment.DirectoryItems);
-    ret.FileItems = std::move(result->Segment.FileItems);
+    ret.DirectoryItems = std::move(result->SinglePage.DirectoryItems);
+    ret.FileItems = std::move(result->SinglePage.FileItems);
 
-    return Azure::Core::Response<Models::ListFilesAndDirectoriesSegmentResult>(
+    return Azure::Core::Response<Models::ListFilesAndDirectoriesSinglePageResult>(
         std::move(ret), result.ExtractRawResponse());
   }
 
-  Azure::Core::Response<Models::ListDirectoryHandlesSegmentResult>
-  ShareDirectoryClient::ListHandlesSegment(const ListDirectoryHandlesSegmentOptions& options) const
+  Azure::Core::Response<Models::ListShareDirectoryHandlesSinglePageResult>
+  ShareDirectoryClient::ListHandlesSinglePage(
+      const ListShareDirectoryHandlesSinglePageOptions& options) const
   {
     auto protocolLayerOptions = Details::ShareRestClient::Directory::ListHandlesOptions();
     protocolLayerOptions.ContinuationToken = options.ContinuationToken;
-    protocolLayerOptions.MaxResults = options.MaxResults;
+    protocolLayerOptions.MaxResults = options.PageSizeHint;
     protocolLayerOptions.Recursive = options.Recursive;
     auto result = Details::ShareRestClient::Directory::ListHandles(
         m_shareDirectoryUri, *m_pipeline, options.Context, protocolLayerOptions);
-    Models::ListDirectoryHandlesSegmentResult ret;
+    Models::ListShareDirectoryHandlesSinglePageResult ret;
     ret.ContinuationToken = std::move(result->ContinuationToken);
     ret.Handles = std::move(result->HandleList);
 
-    return Azure::Core::Response<Models::ListDirectoryHandlesSegmentResult>(
+    return Azure::Core::Response<Models::ListShareDirectoryHandlesSinglePageResult>(
         std::move(ret), result.ExtractRawResponse());
   }
 
-  Azure::Core::Response<Models::ForceCloseDirectoryHandleResult>
+  Azure::Core::Response<Models::ForceCloseShareDirectoryHandleResult>
   ShareDirectoryClient::ForceCloseHandle(
       const std::string& handleId,
-      const ForceCloseDirectoryHandleOptions& options) const
+      const ForceCloseShareDirectoryHandleOptions& options) const
   {
     auto protocolLayerOptions = Details::ShareRestClient::File::ForceCloseHandlesOptions();
     protocolLayerOptions.HandleId = handleId;
     auto result = Details::ShareRestClient::File::ForceCloseHandles(
         m_shareDirectoryUri, *m_pipeline, options.Context, protocolLayerOptions);
-    return Azure::Core::Response<Models::ForceCloseDirectoryHandleResult>(
-        Models::ForceCloseDirectoryHandleResult(), result.ExtractRawResponse());
+    return Azure::Core::Response<Models::ForceCloseShareDirectoryHandleResult>(
+        Models::ForceCloseShareDirectoryHandleResult(), result.ExtractRawResponse());
   }
 
-  Azure::Core::Response<Models::ForceCloseAllDirectoryHandlesResult>
+  Azure::Core::Response<Models::ForceCloseAllShareDirectoryHandlesResult>
   ShareDirectoryClient::ForceCloseAllHandles(
-      const ForceCloseAllDirectoryHandlesOptions& options) const
+      const ForceCloseAllShareDirectoryHandlesOptions& options) const
   {
     auto protocolLayerOptions = Details::ShareRestClient::Directory::ForceCloseHandlesOptions();
     protocolLayerOptions.HandleId = c_FileAllHandles;

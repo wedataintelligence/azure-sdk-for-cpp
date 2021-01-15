@@ -88,19 +88,19 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     m_pipeline = std::make_shared<Azure::Core::Http::HttpPipeline>(policies);
   }
 
-  ShareDirectoryClient ShareClient::GetRootShareDirectoryClient() const
+  ShareDirectoryClient ShareClient::GetRootDirectoryClient() const
   {
-    return GetShareDirectoryClient("");
+    return GetDirectoryClient("");
   }
 
-  ShareDirectoryClient ShareClient::GetShareDirectoryClient(const std::string& directoryPath) const
+  ShareDirectoryClient ShareClient::GetDirectoryClient(const std::string& directoryPath) const
   {
     auto builder = m_shareUri;
     builder.AppendPath(Storage::Details::UrlEncodePath(directoryPath));
     return ShareDirectoryClient(builder, m_pipeline);
   }
 
-  ShareFileClient ShareClient::GetShareFileClient(const std::string& filePath) const
+  ShareFileClient ShareClient::GetFileClient(const std::string& filePath) const
   {
     auto builder = m_shareUri;
     builder.AppendPath(Storage::Details::UrlEncodePath(filePath));
@@ -129,8 +129,34 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     auto protocolLayerOptions = Details::ShareRestClient::Share::CreateOptions();
     protocolLayerOptions.Metadata = options.Metadata;
     protocolLayerOptions.ShareQuota = options.ShareQuotaInGiB;
-    return Details::ShareRestClient::Share::Create(
+    auto result = Details::ShareRestClient::Share::Create(
         m_shareUri, *m_pipeline, options.Context, protocolLayerOptions);
+    Models::CreateShareResult ret;
+    ret.Created = true;
+    ret.ETag = std::move(result->ETag);
+    ret.LastModified = std::move(result->LastModified);
+    return Azure::Core::Response<Models::CreateShareResult>(
+        std::move(ret), result.ExtractRawResponse());
+  }
+
+  Azure::Core::Response<Models::CreateShareResult> ShareClient::CreateIfNotExists(
+      const CreateShareOptions& options) const
+  {
+    try
+    {
+      return Create(options);
+    }
+    catch (StorageException& e)
+    {
+      if (e.ErrorCode == Details::ShareAlreadyExists)
+      {
+        Models::CreateShareResult ret;
+        ret.Created = false;
+        return Azure::Core::Response<Models::CreateShareResult>(
+            std::move(ret), std::move(e.RawResponse));
+      }
+      throw;
+    }
   }
 
   Azure::Core::Response<Models::DeleteShareResult> ShareClient::Delete(
@@ -141,8 +167,32 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     {
       protocolLayerOptions.XMsDeleteSnapshots = Models::DeleteSnapshotsOptionType::Include;
     }
-    return Details::ShareRestClient::Share::Delete(
+    auto result = Details::ShareRestClient::Share::Delete(
         m_shareUri, *m_pipeline, options.Context, protocolLayerOptions);
+    Models::DeleteShareResult ret;
+    ret.Deleted = true;
+    return Azure::Core::Response<Models::DeleteShareResult>(
+        std::move(ret), result.ExtractRawResponse());
+  }
+
+  Azure::Core::Response<Models::DeleteShareResult> ShareClient::DeleteIfExists(
+      const DeleteShareOptions& options) const
+  {
+    try
+    {
+      return Delete(options);
+    }
+    catch (StorageException& e)
+    {
+      if (e.ErrorCode == Details::ShareNotFound)
+      {
+        Models::DeleteShareResult ret;
+        ret.Deleted = false;
+        return Azure::Core::Response<Models::DeleteShareResult>(
+            std::move(ret), std::move(e.RawResponse));
+      }
+      throw;
+    }
   }
 
   Azure::Core::Response<Models::CreateShareSnapshotResult> ShareClient::CreateSnapshot(
@@ -228,30 +278,30 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
         m_shareUri, *m_pipeline, options.Context, protocolLayerOptions);
   }
 
-  Azure::Core::Response<Models::ListFilesAndDirectoriesSegmentResult>
-  ShareClient::ListFilesAndDirectoriesSegment(
-      const ListFilesAndDirectoriesSegmentOptions& options) const
+  Azure::Core::Response<Models::ListFilesAndDirectoriesSinglePageResult>
+  ShareClient::ListFilesAndDirectoriesSinglePage(
+      const ListFilesAndDirectoriesSinglePageOptions& options) const
   {
     auto protocolLayerOptions
-        = Details::ShareRestClient::Directory::ListFilesAndDirectoriesSegmentOptions();
+        = Details::ShareRestClient::Directory::ListFilesAndDirectoriesSinglePageOptions();
     protocolLayerOptions.Prefix = options.Prefix;
     protocolLayerOptions.ContinuationToken = options.ContinuationToken;
-    protocolLayerOptions.MaxResults = options.MaxResults;
-    auto result = Details::ShareRestClient::Directory::ListFilesAndDirectoriesSegment(
+    protocolLayerOptions.MaxResults = options.PageSizeHint;
+    auto result = Details::ShareRestClient::Directory::ListFilesAndDirectoriesSinglePage(
         m_shareUri, *m_pipeline, options.Context, protocolLayerOptions);
-    Models::ListFilesAndDirectoriesSegmentResult ret;
+    Models::ListFilesAndDirectoriesSinglePageResult ret;
     ret.ServiceEndpoint = std::move(result->ServiceEndpoint);
     ret.ShareName = std::move(result->ShareName);
     ret.ShareSnapshot = std::move(result->ShareSnapshot);
     ret.DirectoryPath = std::move(result->DirectoryPath);
     ret.Prefix = std::move(result->Prefix);
     ret.PreviousContinuationToken = std::move(result->PreviousContinuationToken);
-    ret.MaxResults = result->MaxResults;
+    ret.PageSizeHint = result->PageSizeHint;
     ret.ContinuationToken = std::move(result->ContinuationToken);
-    ret.DirectoryItems = std::move(result->Segment.DirectoryItems);
-    ret.FileItems = std::move(result->Segment.FileItems);
+    ret.DirectoryItems = std::move(result->SinglePage.DirectoryItems);
+    ret.FileItems = std::move(result->SinglePage.FileItems);
 
-    return Azure::Core::Response<Models::ListFilesAndDirectoriesSegmentResult>(
+    return Azure::Core::Response<Models::ListFilesAndDirectoriesSinglePageResult>(
         std::move(ret), result.ExtractRawResponse());
   }
 

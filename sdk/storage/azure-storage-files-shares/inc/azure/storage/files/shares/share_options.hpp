@@ -45,7 +45,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     Azure::Core::Http::TransportPolicyOptions TransportPolicyOptions;
   };
 
-  struct ListSharesSegmentOptions
+  struct ListSharesSinglePageOptions
   {
     /**
      * @brief Context for cancelling long running operations.
@@ -68,10 +68,10 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
 
     /**
      * @brief Specifies the maximum number of entries to return. If the request does not specify
-     * maxresults, or specifies a value greater than 5,000, the server will return up to 5,000
+     * PageSizeHint, or specifies a value greater than 5,000, the server will return up to 5,000
      * items.
      */
-    Azure::Core::Nullable<int32_t> MaxResults;
+    Azure::Core::Nullable<int32_t> PageSizeHint;
 
     /**
      * @brief Include this parameter to specify one or more datasets to include in the response.
@@ -267,7 +267,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     Azure::Core::Context Context;
   };
 
-  struct CreateDirectoryOptions
+  struct CreateShareDirectoryOptions
   {
     /**
      * @brief Context for cancelling long running operations.
@@ -291,7 +291,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     Models::FileShareSmbProperties SmbProperties;
   };
 
-  struct DeleteDirectoryOptions
+  struct DeleteShareDirectoryOptions
   {
     /**
      * @brief Context for cancelling long running operations.
@@ -299,7 +299,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     Azure::Core::Context Context;
   };
 
-  struct GetDirectoryPropertiesOptions
+  struct GetShareDirectoryPropertiesOptions
   {
     /**
      * @brief Context for cancelling long running operations.
@@ -307,7 +307,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     Azure::Core::Context Context;
   };
 
-  struct SetDirectoryPropertiesOptions
+  struct SetShareDirectoryPropertiesOptions
   {
     /**
      * @brief Context for cancelling long running operations.
@@ -323,7 +323,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     Azure::Core::Nullable<std::string> FilePermission;
   };
 
-  struct SetDirectoryMetadataOptions
+  struct SetShareDirectoryMetadataOptions
   {
     /**
      * @brief Context for cancelling long running operations.
@@ -331,7 +331,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     Azure::Core::Context Context;
   };
 
-  struct ListFilesAndDirectoriesSegmentOptions
+  struct ListFilesAndDirectoriesSinglePageOptions
   {
     /**
      * @brief Context for cancelling long running operations.
@@ -354,13 +354,13 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
 
     /**
      * @brief Specifies the maximum number of entries to return. If the request does not specify
-     * maxresults, or specifies a value greater than 5,000, the server will return up to 5,000
+     * PageSizeHint, or specifies a value greater than 5,000, the server will return up to 5,000
      * items.
      */
-    Azure::Core::Nullable<int32_t> MaxResults;
+    Azure::Core::Nullable<int32_t> PageSizeHint;
   };
 
-  struct ListDirectoryHandlesSegmentOptions
+  struct ListShareDirectoryHandlesSinglePageOptions
   {
     /**
      * @brief Context for cancelling long running operations.
@@ -377,10 +377,10 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
 
     /**
      * @brief Specifies the maximum number of entries to return. If the request does not specify
-     * maxresults, or specifies a value greater than 5,000, the server will return up to 5,000
+     * PageSizeHint, or specifies a value greater than 5,000, the server will return up to 5,000
      * items.
      */
-    Azure::Core::Nullable<int32_t> MaxResults;
+    Azure::Core::Nullable<int32_t> PageSizeHint;
 
     /**
      * @brief Specifies operation should apply to the directory specified in the URI, its files, its
@@ -389,7 +389,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     Azure::Core::Nullable<bool> Recursive;
   };
 
-  struct ForceCloseDirectoryHandleOptions
+  struct ForceCloseShareDirectoryHandleOptions
   {
     /**
      * @brief Context for cancelling long running operations.
@@ -397,7 +397,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     Azure::Core::Context Context;
   };
 
-  struct ForceCloseAllDirectoryHandlesOptions
+  struct ForceCloseAllShareDirectoryHandlesOptions
   {
     /**
      * @brief Context for cancelling long running operations.
@@ -419,7 +419,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     Azure::Core::Nullable<bool> Recursive;
   };
 
-  struct CreateFileOptions
+  struct CreateShareFileOptions
   {
     /**
      * @brief Context for cancelling long running operations.
@@ -453,7 +453,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     LeaseAccessConditions AccessConditions;
   };
 
-  struct DeleteFileOptions
+  struct DeleteShareFileOptions
   {
     /**
      * @brief Context for cancelling long running operations.
@@ -466,7 +466,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     LeaseAccessConditions AccessConditions;
   };
 
-  struct DownloadFileOptions
+  struct DownloadShareFileOptions
   {
     /**
      * @brief Context for cancelling long running operations.
@@ -474,15 +474,9 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     Azure::Core::Context Context;
 
     /**
-     * @brief Downloads only the bytes of the file from this offset.
+     * @brief Downloads only the bytes of the file from this range.
      */
-    Azure::Core::Nullable<int64_t> Offset;
-
-    /**
-     * @brief Returns at most this number of bytes of the file from the offset. Null means
-     * download until the end.
-     */
-    Azure::Core::Nullable<int64_t> Length;
+    Azure::Core::Nullable<Core::Http::Range> Range;
 
     /**
      * @brief When this parameter is set to true and specified together with the Range parameter,
@@ -497,7 +491,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     LeaseAccessConditions AccessConditions;
   };
 
-  struct StartCopyFileOptions
+  struct StartCopyShareFileOptions
   {
     /**
      * @brief Context for cancelling long running operations.
@@ -544,7 +538,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     LeaseAccessConditions AccessConditions;
   };
 
-  struct AbortCopyFileOptions
+  struct AbortCopyShareFileOptions
   {
     /**
      * @brief Context for cancelling long running operations.
@@ -557,7 +551,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     LeaseAccessConditions AccessConditions;
   };
 
-  struct GetFilePropertiesOptions
+  struct GetShareFilePropertiesOptions
   {
     /**
      * @brief Context for cancelling long running operations.
@@ -570,7 +564,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     LeaseAccessConditions AccessConditions;
   };
 
-  struct SetFilePropertiesOptions
+  struct SetShareFilePropertiesOptions
   {
     /**
      * @brief Context for cancelling long running operations.
@@ -594,7 +588,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     LeaseAccessConditions AccessConditions;
   };
 
-  struct SetFileMetadataOptions
+  struct SetShareFileMetadataOptions
   {
     /**
      * @brief Context for cancelling long running operations.
@@ -607,7 +601,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     LeaseAccessConditions AccessConditions;
   };
 
-  struct UploadFileRangeOptions
+  struct UploadShareFileRangeOptions
   {
     /**
      * @brief Context for cancelling long running operations.
@@ -628,7 +622,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     LeaseAccessConditions AccessConditions;
   };
 
-  struct ClearFileRangeOptions
+  struct ClearShareFileRangeOptions
   {
     /**
      * @brief Context for cancelling long running operations.
@@ -649,14 +643,9 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     Azure::Core::Context Context;
 
     /**
-     * @brief The offset of the source file.
+     * @brief The range of the source file.
      */
-    Azure::Core::Nullable<int64_t> SourceOffset;
-
-    /**
-     * @brief The length of the source file.
-     */
-    Azure::Core::Nullable<int64_t> SourceLength;
+    Azure::Core::Nullable<Core::Http::Range> SourceRange;
 
     /**
      * @brief Specify the crc64 calculated for the range of bytes that must be read from the copy
@@ -675,7 +664,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     LeaseAccessConditions AccessConditions;
   };
 
-  struct GetFileRangeListOptions
+  struct GetShareFileRangeListOptions
   {
     /**
      * @brief Context for cancelling long running operations.
@@ -683,15 +672,9 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     Azure::Core::Context Context;
 
     /**
-     * @brief The offset of the ranges to be get from service.
+     * @brief The range to be get from service.
      */
-    Azure::Core::Nullable<int64_t> Offset;
-
-    /**
-     * @brief The length starting from the offset to be get from the service. When present, 'Offset'
-     * must not be null, otherwise it is ignored.
-     */
-    Azure::Core::Nullable<int64_t> Length;
+    Azure::Core::Nullable<Core::Http::Range> Range;
 
     /**
      * @brief The previous snapshot parameter is an opaque DateTime value that, when present,
@@ -705,7 +688,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     LeaseAccessConditions AccessConditions;
   };
 
-  struct ListFileHandlesSegmentOptions
+  struct ListShareFileHandlesSinglePageOptions
   {
     /**
      * @brief Context for cancelling long running operations.
@@ -722,13 +705,13 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
 
     /**
      * @brief Specifies the maximum number of entries to return. If the request does not specify
-     * maxresults, or specifies a value greater than 5,000, the server will return up to 5,000
+     * PageSizeHint, or specifies a value greater than 5,000, the server will return up to 5,000
      * items.
      */
-    Azure::Core::Nullable<int32_t> MaxResults;
+    Azure::Core::Nullable<int32_t> PageSizeHint;
   };
 
-  struct ForceCloseFileHandleOptions
+  struct ForceCloseShareFileHandleOptions
   {
     /**
      * @brief Context for cancelling long running operations.
@@ -736,7 +719,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     Azure::Core::Context Context;
   };
 
-  struct ForceCloseAllFileHandlesOptions
+  struct ForceCloseAllShareFileHandlesOptions
   {
     /**
      * @brief Context for cancelling long running operations.
@@ -755,7 +738,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
   /**
    * @brief Optional parameters for FileClient::DownloadTo.
    */
-  struct DownloadFileToOptions
+  struct DownloadShareFileToOptions
   {
     /**
      * @brief Context for cancelling long running operations.
@@ -763,15 +746,9 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
     Azure::Core::Context Context;
 
     /**
-     * @brief Downloads only the bytes of the file from this offset.
+     * @brief Downloads only the bytes of the file from this range.
      */
-    Azure::Core::Nullable<int64_t> Offset;
-
-    /**
-     * @brief Returns at most this number of bytes of the file from the offset. Null means
-     * download until the end.
-     */
-    Azure::Core::Nullable<int64_t> Length;
+    Azure::Core::Nullable<Core::Http::Range> Range;
 
     /**
      * @brief The size of the first range request in bytes. Files smaller than this limit will be
@@ -794,7 +771,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
   /**
    * @brief Optional parameters for FileClient::AcquireLease.
    */
-  struct AcquireFileLeaseOptions
+  struct AcquireShareFileLeaseOptions
   {
     /**
      * @brief Context for cancelling long running operations.
@@ -805,7 +782,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
   /**
    * @brief Optional parameters for FileClient::ChangeLease.
    */
-  struct ChangeFileLeaseOptions
+  struct ChangeShareFileLeaseOptions
   {
     /**
      * @brief Context for cancelling long running operations.
@@ -816,7 +793,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
   /**
    * @brief Optional parameters for FileClient::ReleaseLease.
    */
-  struct ReleaseFileLeaseOptions
+  struct ReleaseShareFileLeaseOptions
   {
     /**
      * @brief Context for cancelling long running operations.
@@ -827,7 +804,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
   /**
    * @brief Optional parameters for FileClient::BreakLease.
    */
-  struct BreakFileLeaseOptions
+  struct BreakShareFileLeaseOptions
   {
     /**
      * @brief Context for cancelling long running operations.
@@ -838,7 +815,7 @@ namespace Azure { namespace Storage { namespace Files { namespace Shares {
   /**
    * @brief Optional parameters for FileClient::UploadFrom.
    */
-  struct UploadFileFromOptions
+  struct UploadShareFileFromOptions
   {
     /**
      * @brief Context for cancelling long running operations.

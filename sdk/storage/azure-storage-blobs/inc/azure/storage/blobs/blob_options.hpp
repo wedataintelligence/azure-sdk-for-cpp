@@ -330,6 +330,12 @@ namespace Azure { namespace Storage { namespace Blobs {
      * @brief Context for cancelling long running operations.
      */
     Azure::Core::Context Context;
+
+    /**
+     * @brief Use this parameter if you would like to restore the container under a
+     * different name.
+     */
+    Azure::Core::Nullable<std::string> DestinationBlobContainerName;
   };
 
   /**
@@ -628,7 +634,7 @@ namespace Azure { namespace Storage { namespace Blobs {
     /**
      * @brief Optional conditions that the source must meet to perform this operation.
      */
-    BlobAccessConditions SourceConditions;
+    BlobAccessConditions SourceAccessConditions;
 
     /**
      * @brief Specifies the tier to be set on the target blob.
@@ -1026,7 +1032,7 @@ namespace Azure { namespace Storage { namespace Blobs {
      */
     struct : public ModifiedTimeConditions, public ETagAccessConditions
     {
-    } SourceConditions;
+    } SourceAccessConditions;
   };
 
   /**
@@ -1328,17 +1334,6 @@ namespace Azure { namespace Storage { namespace Blobs {
      * @brief Optional conditions that must be met to perform this operation.
      */
     BlobAccessConditions AccessConditions;
-  };
-
-  /**
-   * @brief Optional parameters for BlobBatchClient::SubmitBatch.
-   */
-  struct SubmitBlobBatchOptions
-  {
-    /**
-     * @brief Context for cancelling long running operations.
-     */
-    Azure::Core::Context Context;
   };
 
 }}} // namespace Azure::Storage::Blobs

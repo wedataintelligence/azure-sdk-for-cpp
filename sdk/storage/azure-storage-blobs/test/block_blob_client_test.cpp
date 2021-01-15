@@ -79,6 +79,9 @@ namespace Azure { namespace Storage { namespace Test {
   TEST_F(BlockBlobClientTest, UploadDownload)
   {
     auto res = m_blockBlobClient->Download();
+    EXPECT_EQ(res->BlobSize, static_cast<int64_t>(m_blobContent.size()));
+    EXPECT_EQ(res->ContentRange.Offset, 0);
+    EXPECT_EQ(res->ContentRange.Length.GetValue(), static_cast<int64_t>(m_blobContent.size()));
     EXPECT_EQ(ReadBodyStream(res->BodyStream), m_blobContent);
     EXPECT_FALSE(res.GetRawResponse().GetHeaders().at(Details::HttpHeaderRequestId).empty());
     EXPECT_FALSE(res.GetRawResponse().GetHeaders().at(Details::HttpHeaderDate).empty());
@@ -97,8 +100,11 @@ namespace Azure { namespace Storage { namespace Test {
         std::vector<uint8_t>(
             m_blobContent.begin() + static_cast<std::size_t>(options.Range.GetValue().Offset),
             m_blobContent.begin()
-                + static_cast<std::size_t>(options.Range.GetValue().Offset + options.Range.GetValue().Length.GetValue())));
-    EXPECT_FALSE(res->ContentRange.GetValue().empty());
+                + static_cast<std::size_t>(
+                    options.Range.GetValue().Offset + options.Range.GetValue().Length.GetValue())));
+    EXPECT_EQ(res->ContentRange.Offset, options.Range.GetValue().Offset);
+    EXPECT_EQ(res->ContentRange.Length.GetValue(), options.Range.GetValue().Length.GetValue());
+    EXPECT_EQ(res->BlobSize, static_cast<int64_t>(m_blobContent.size()));
   }
 
   TEST_F(BlockBlobClientTest, DISABLED_LastAccessTime)
@@ -268,8 +274,8 @@ namespace Azure { namespace Storage { namespace Test {
 
   TEST_F(BlockBlobClientTest, StageBlock)
   {
-    const std::string blockId1 = Azure::Storage::Base64Encode("0");
-    const std::string blockId2 = Azure::Storage::Base64Encode("1");
+    const std::string blockId1 = Base64EncodeText("0");
+    const std::string blockId2 = Base64EncodeText("1");
     auto blockBlobClient = Azure::Storage::Blobs::BlockBlobClient::CreateFromConnectionString(
         StandardStorageConnectionString(), m_containerName, RandomString());
     std::vector<uint8_t> block1Content;
@@ -779,14 +785,14 @@ namespace Azure { namespace Storage { namespace Test {
     auto blobClientWithoutAuth = Azure::Storage::Blobs::BlockBlobClient(blobClient.GetUrl());
     {
       auto response = blobClient.DeleteIfExists();
-      EXPECT_FALSE(response.HasValue());
+      EXPECT_FALSE(response->Deleted);
     }
     std::vector<uint8_t> emptyContent;
     blobClient.UploadFrom(emptyContent.data(), emptyContent.size());
     EXPECT_THROW(blobClientWithoutAuth.DeleteIfExists(), StorageException);
     {
       auto response = blobClient.DeleteIfExists();
-      EXPECT_TRUE(response.HasValue());
+      EXPECT_TRUE(response->Deleted);
     }
 
     blobClient.UploadFrom(emptyContent.data(), emptyContent.size());
@@ -794,12 +800,32 @@ namespace Azure { namespace Storage { namespace Test {
     auto blobClientWithSnapshot = blobClient.WithSnapshot(snapshot);
     {
       auto response = blobClientWithSnapshot.DeleteIfExists();
-      EXPECT_TRUE(response.HasValue());
+      EXPECT_TRUE(response->Deleted);
     }
     {
       auto response = blobClientWithSnapshot.DeleteIfExists();
-      EXPECT_FALSE(response.HasValue());
+      EXPECT_FALSE(response->Deleted);
     }
+  }
+
+  TEST_F(BlockBlobClientTest, DeleteSnapshots)
+  {
+    std::vector<uint8_t> emptyContent;
+    auto blobClient = Azure::Storage::Blobs::BlockBlobClient::CreateFromConnectionString(
+        StandardStorageConnectionString(), m_containerName, RandomString());
+    blobClient.UploadFrom(emptyContent.data(), emptyContent.size());
+    auto s1 = blobClient.CreateSnapshot()->Snapshot;
+    Blobs::DeleteBlobOptions deleteOptions;
+    EXPECT_THROW(blobClient.Delete(deleteOptions), StorageException);
+    deleteOptions.DeleteSnapshots = Blobs::Models::DeleteSnapshotsOption::OnlySnapshots;
+    EXPECT_NO_THROW(blobClient.Delete(deleteOptions));
+    EXPECT_NO_THROW(blobClient.GetProperties());
+    EXPECT_THROW(blobClient.WithSnapshot(s1).GetProperties(), StorageException);
+    auto s2 = blobClient.CreateSnapshot()->Snapshot;
+    deleteOptions.DeleteSnapshots = Blobs::Models::DeleteSnapshotsOption::IncludeSnapshots;
+    EXPECT_NO_THROW(blobClient.Delete(deleteOptions));
+    EXPECT_THROW(blobClient.GetProperties(), StorageException);
+    EXPECT_THROW(blobClient.WithSnapshot(s2).GetProperties(), StorageException);
   }
 
 }}} // namespace Azure::Storage::Test
